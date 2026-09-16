@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Absensi QR - TIF Universitas Jabal Ghafur</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  :root{
+    --green-900:#0b3d2a;
+    --green-800:#0e5c3c;
+    --green-700:#146b47;
+    --gold-500:#c49b3a;
+    --gold-400:#d9b65a;
+    --cream:#f7f5ef;
+    --ink:#16241d;
+    --line:#e3ded0;
+    --white:#ffffff;
+    --danger:#a4342a;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--cream);color:var(--ink);font-family:"Segoe UI",Roboto,Arial,sans-serif;}
+  h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0 0 4px 0;font-weight:600;}
+  .app{display:flex;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{width:250px;background:linear-gradient(180deg,var(--green-900),var(--green-800));color:var(--white);flex-shrink:0;display:flex;flex-direction:column;}
+  .brand{padding:24px 20px 18px 20px;border-bottom:1px solid rgba(255,255,255,.14);display:flex;gap:12px;align-items:center;}
+  .brand img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:var(--white);}
+  .brand .t1{font-size:13px;letter-spacing:.3px;opacity:.85;}
+  .brand .t2{font-size:15px;font-weight:700;font-family:Georgia,serif;}
+  nav{padding:14px 10px;flex:1;}
+  nav button{width:100%;text-align:left;background:none;border:none;color:rgba(255,255,255,.85);padding:11px 14px;margin-bottom:4px;border-radius:8px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s;}
+  nav button:hover{background:rgba(255,255,255,.08);}
+  nav button.active{background:var(--gold-500);color:var(--green-900);font-weight:700;}
+  .ruang-tag{margin:0 14px 14px 14px;padding:10px 12px;background:rgba(255,255,255,.08);border-radius:8px;font-size:12px;line-height:1.5;}
+  .ruang-tag b{color:var(--gold-400);}
+  .logout{margin:10px;padding:11px 14px;border-radius:8px;color:#f2c9c2;background:rgba(164,52,42,.18);border:none;cursor:pointer;font-size:14px;text-align:left;}
+
+  /* Main */
+  .main{flex:1;padding:30px 36px;max-width:1180px;}
+  .pagehead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px;}
+  .pagehead p{margin:2px 0 0 0;color:#5b6b5f;font-size:13.5px;}
+  .card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:20px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+  .stat{background:var(--white);border:1px solid var(--line);border-left:4px solid var(--gold-500);border-radius:10px;padding:18px;}
+  .stat .n{font-size:30px;font-weight:700;font-family:Georgia,serif;color:var(--green-800);}
+  .stat .l{font-size:13px;color:#5b6b5f;margin-top:2px;}
+
+  label{display:block;font-size:12.5px;color:#5b6b5f;margin-bottom:5px;margin-top:14px;}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;font-size:14px;background:#fdfcf9;color:var(--ink);}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold-500);}
+  .btn{display:inline-block;background:var(--green-800);color:var(--white);border:none;padding:11px 20px;border-radius:7px;font-size:14px;cursor:pointer;font-weight:600;}
+  .btn:hover{background:var(--green-700);}
+  .btn.gold{background:var(--gold-500);color:var(--green-900);}
+  .btn.outline{background:none;border:1px solid var(--line);color:var(--ink);}
+  .btn.small{padding:6px 12px;font-size:12.5px;}
+  .btn.danger{background:var(--danger);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;padding:10px 10px;background:#f1efe6;color:#3d4a40;border-bottom:1px solid var(--line);font-weight:700;}
+  td{padding:10px;border-bottom:1px solid var(--line);}
+  tr:hover td{background:#fbfaf5;}
+  .badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:700;}
+  .badge.hadir{background:#e2f1e7;color:#1c6b3f;}
+  .badge.izin{background:#fdf1d8;color:#8a6314;}
+  .badge.sakit{background:#e6eefb;color:#2a5aa8;}
+  .badge.alpa{background:#fbe4e1;color:#a4342a;}
+  .badge.nonaktif{background:#eee;color:#888;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;}
+  .toolbar>div{min-width:150px;}
+
+  .scanbox{max-width:420px;margin:0 auto;}
+  #reader{width:100%;border-radius:10px;overflow:hidden;border:1px solid var(--line);}
+  .scanresult{margin-top:16px;padding:16px;border-radius:8px;text-align:center;font-weight:700;font-size:15px;}
+  .scanresult.ok{background:#e2f1e7;color:#1c6b3f;}
+  .scanresult.err{background:#fbe4e1;color:#a4342a;}
+
+  .qrgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+  .qrcard{border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;background:#fff;}
+  .qrcard .qrbox{display:flex;justify-content:center;margin-bottom:8px;}
+  .qrcard .nm{font-weight:700;font-size:13px;}
+  .qrcard .id{font-size:11.5px;color:#5b6b5f;}
+
+  .muted{color:#5b6b5f;font-size:13px;}
+  .hidden{display:none !important;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:900px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%;}
+    .grid3,.row2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="sidebar">
+    <div class="brand">
+      <img id="logoImg" src="" onerror="this.style.display='none'">
+      <div>
+        <div class="t2">TIF - UJG</div>
+        <div class="t1">Absensi QR Code</div>
+      </div>
+    </div>
+    <nav>
+      <button class="navbtn active" data-page="dashboard">📊 Dashboard</button>
+      <button class="navbtn" data-page="scan">📷 Scan Absensi</button>
+      <button class="navbtn" data-page="mahasiswa">🧑‍🎓 Data Mahasiswa</button>
+      <button class="navbtn" data-page="manual">✍️ Absen Manual</button>
+      <button class="navbtn" data-page="kartu">🪪 Cetak Kartu QR</button>
+      <button class="navbtn" data-page="laporan">📄 Laporan Rekap</button>
+      <button class="navbtn" data-page="pengaturan">⚙️ Pengaturan</button>
+    </nav>
+    <div class="ruang-tag">
+      <div><b>Fakultas Teknik Informatika</b></div>
+      <div>Universitas Jabal Ghafur</div>
+      <div>Ruang: <b id="ruangLabel">5.5</b></div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page" id="page-dashboard">
+      <div class="pagehead">
+        <div>
+          <h2>Dashboard</h2>
+          <p>Ringkasan kehadiran hari ini &mdash; Ruang 5.5, Fakultas Teknik Informatika</p>
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="stat"><div class="n" id="statTotal">-</div><div class="l">Total Mahasiswa Aktif</div></div>
+        <div class="stat"><div class="n" id="statHadir">-</div><div class="l">Hadir Hari Ini</div></div>
+        <div class="stat"><div class="n" id="statBelum">-</div><div class="l">Belum Absen</div></div>
+      </div>
+      <div class="card">
+        <h3>Absensi Hari Ini</h3>
+        <p class="muted" id="tglHariIni"></p>
+        <table id="tblDashboard"><thead><tr><th>NIM</th><th>Nama</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+
+    <!-- SCAN -->
+    <div class="page hidden" id="page-scan">
+      <div class="pagehead"><div><h2>Scan Absensi QR</h2><p>Arahkan kamera ke kartu QR mahasiswa</p></div></div>
+      <div class="card scanbox">
+        <div id="reader"></div>
+        <div id="scanResult" class="scanresult hidden"></div>
+        <p class="muted" style="text-align:center;margin-top:14px;">Scan pertama = Jam Masuk. Scan kedua di hari yang sama = Jam Pulang.</p>
+      </div>
+    </div>
+
+    <!-- MAHASISWA -->
+    <div class="page hidden" id="page-mahasiswa">
+      <div class="pagehead">
+        <div><h2>Data Mahasiswa</h2><p>Daftar mahasiswa Ruang 5.5</p></div>
+        <button class="btn gold" onclick="openAddMhs()">+ Tambah Mahasiswa</button>
+      </div>
+      <div class="card">
+        <div id="addMhsForm" class="row2 hidden" style="margin-bottom:16px;">
+          <div><label>NIM</label><input id="newNim" placeholder="24105111xxx"></div>
+          <div><label>Nama</label><input id="newNama" placeholder="Nama lengkap"></div>
+          <div style="grid-column:1/3;"><button class="btn" onclick="submitAddMhs()">Simpan</button></div>
+        </div>
+        <table id="tblMahasiswa"><thead><tr><th>No</th><th>NIM</th><th>Nama</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+
+    <!-- ABSEN MANUAL -->
+    <div class="page hidden" id="page-manual">
+      <div class="pagehead"><div><h2>Input Absen Manual</h2><p>Untuk mahasiswa izin/sakit/alpa tanpa scan QR</p></div></div>
+      <div class="card" style="max-width:480px;">
+        <label>Pilih Mahasiswa</label>
+        <select id="manualNim"></select>
+        <label>Tanggal</label>
+        <input type="date" id="manualTanggal">
+        <label>Status Kehadiran</label>
+        <select id="manualStatus">
+          <option value="Hadir">Hadir</option>
+          <option value="Izin">Izin (I)</option>
+          <option value="Sakit">Sakit (S)</option>
+          <option value="Alpa">Alpa (A)</option>
+        </select>
+        <div style="margin-top:18px;"><button class="btn" onclick="submitManual()">Simpan Absensi</button></div>
+      </div>
+    </div>
+
+    <!-- KARTU QR -->
+    <div class="page hidden" id="page-kartu">
+      <div class="pagehead">
+        <div><h2>Cetak Kartu QR</h2><p>QR unik per mahasiswa untuk dicetak / discan</p></div>
+        <button class="btn outline" onclick="window.print()">🖨️ Cetak Halaman Ini</button>
+      </div>
+      <div class="qrgrid" id="qrGrid"></div>
+    </div>
+
+    <!-- LAPORAN -->
+    <div class="page hidden" id="page-laporan">
+      <div class="pagehead"><div><h2>Laporan Rekap</h2><p>Rekap kehadiran per periode</p></div></div>
+      <div class="card">
+        <div class="toolbar">
+          <div><label>Tipe</label><select id="lapTipe"><option value="harian">Harian</option><option value="bulanan">Bulanan</option><option value="semua">Semua</option></select></div>
+          <div><label>Filter Mahasiswa</label><select id="lapMhs"><option value="">Semua Mahasiswa</option></select></div>
+          <div id="lapTanggalWrap"><label>Tanggal</label><input type="date" id="lapTanggal"></div>
+          <div id="lapBulanWrap" class="hidden"><label>Bulan</label><input type="month" id="lapBulan"></div>
+          <div><button class="btn" onclick="cariLaporan()">Cari</button></div>
+          <div><button class="btn outline" onclick="window.print()">🖨️ Cetak</button></div>
+        </div>
+        <table id="tblLaporan"><thead><tr><th>Tanggal</th><th>NIM</th><th>Nama</th><th>Masuk</th><th>Pulang</th><th>Status</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+
+    <!-- PENGATURAN -->
+    <div class="page hidden" id="page-pengaturan">
+      <div class="pagehead"><div><h2>Pengaturan</h2><p>Profil institusi &amp; identitas kop laporan</p></div></div>
+      <div class="card" style="max-width:560px;">
+        <label>Nama Institusi</label><input id="setInstitusi">
+        <label>Fakultas / Prodi</label><input id="setFakultas">
+        <label>Ruang Kelas</label><input id="setRuang">
+        <label>Alamat</label><textarea id="setAlamat" rows="2"></textarea>
+        <label>Logo (URL gambar)</label><input id="setLogo" placeholder="https://.../logo.png">
+        <label>Penanggung Jawab (Dosen/Kaprodi)</label><input id="setPJ">
+        <label>NIP/NIDN</label><input id="setNip">
+        <label>Tempat/Kota TTD</label><input id="setKota">
+        <div style="margin-top:18px;"><button class="btn gold" onclick="saveSettingsUI()">Simpan Perubahan</button></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- Navigation ---------- */
+document.querySelectorAll('.navbtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));
+    document.getElementById('page-'+btn.dataset.page).classList.remove('hidden');
+    if(btn.dataset.page==='scan') startScanner();
+    else stopScanner();
+    if(btn.dataset.page==='kartu') renderKartuQR();
+    if(btn.dataset.page==='laporan') cariLaporan();
+  });
+});
+
+/* ---------- Helpers: call Apps Script (with local-preview fallback) ---------- */
+function callServer(fn, args, onSuccess, onFailure) {
+    // 1. GANTI teks di bawah ini dengan URL Web App yang sudah Anda salin dari Google Apps Script
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyFIwsxGsdXetlVFw2Qo8-ASCr5KgqCJ-NQ3a2-CKwZbycVbMCJSefxN1GUhJdVKDj2/exec"; 
+
+    fetch(webAppUrl, {
+        method: "POST",
+        body: JSON.stringify({ functionName: fn, arguments: args })
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.status === "success") {
+            if (onSuccess) onSuccess(res.data);
+        } else {
+            if (onFailure) onFailure(res.message);
+        }
+    })
+    .catch(err => {
+        console.error("Error callServer:", err);
+        if (onFailure) onFailure(err);
+    });
+}
+
+
+let MHS_CACHE = [];
+
+function loadMahasiswa(cb){
+  callServer('getMahasiswaList', [], function(list){
+    MHS_CACHE = list || [];
+    if(cb) cb(MHS_CACHE);
+  });
+}
+
+/* ---------- Dashboard ---------- */
+function loadDashboard(){
+  callServer('getDashboardStats', [], function(s){
+    document.getElementById('statTotal').textContent = s.totalMahasiswa;
+    document.getElementById('statHadir').textContent = s.hadirHariIni;
+    document.getElementById('statBelum').textContent = s.belumHadir;
+    document.getElementById('tglHariIni').textContent = 'Tanggal: ' + s.tanggal;
+  });
+  callServer('getLaporan', ['harian', null, new Date().toISOString().slice(0,10)], function(rows){
+    const tb = document.querySelector('#tblDashboard tbody');
+    tb.innerHTML = '';
+    rows.forEach(r=>{
+      tb.innerHTML += `<tr><td>${r.nim}</td><td>${r.nama}</td><td>${r.masuk||'-'}</td><td>${r.pulang||'-'}</td><td><span class="badge hadir">${r.status}</span></td></tr>`;
+    });
+  });
+}
+
+/* ---------- Scan ---------- */
+let html5QrCode, scannerRunning=false;
+function startScanner(){
+  if(scannerRunning) return;
+  if(typeof Html5Qrcode === 'undefined') return;
+  html5QrCode = new Html5Qrcode("reader");
+  Html5Qrcode.getCameras().then(cams=>{
+    if(!cams || !cams.length) return;
+    html5QrCode.start(cams[0].id, {fps:10, qrbox:220}, onScanSuccess).then(()=>scannerRunning=true);
+  }).catch(err=>console.error(err));
+}
+function stopScanner(){
+  if(scannerRunning && html5QrCode){
+    html5QrCode.stop().then(()=>{scannerRunning=false;});
+  }
+}
+let lastScan=0;
+function onScanSuccess(decodedText){
+  const now = Date.now();
+  if(now - lastScan < 3000) return; // debounce
+  lastScan = now;
+  callServer('recordScan', [decodedText], function(res){
+    const el = document.getElementById('scanResult');
+    el.classList.remove('hidden','ok','err');
+    el.classList.add(res.ok?'ok':'err');
+    el.textContent = res.message;
+    loadDashboard();
+  }, function(err){
+    const el = document.getElementById('scanResult');
+    el.classList.remove('hidden','ok','err');
+    el.classList.add('err');
+    el.textContent = err.message || 'Gagal memproses scan.';
+  });
+}
+
+/* ---------- Mahasiswa ---------- */
+function renderMahasiswaTable(){
+  loadMahasiswa(function(list){
+    const tb = document.querySelector('#tblMahasiswa tbody');
+    tb.innerHTML='';
+    list.forEach(m=>{
+      const badge = m.status==='AKTIF' ? '<span class="badge hadir">AKTIF</span>' : '<span class="badge nonaktif">NONAKTIF</span>';
+      tb.innerHTML += `<tr><td>${m.no}</td><td>${m.nim}</td><td>${m.nama}</td><td>${badge}</td>
+        <td><button class="btn small danger" onclick="hapusMhs('${m.nim}')">Nonaktifkan</button></td></tr>`;
+    });
+    // fill selects
+    const sel = document.getElementById('manualNim'); sel.innerHTML='';
+    const selLap = document.getElementById('lapMhs'); selLap.innerHTML='<option value="">Semua Mahasiswa</option>';
+    list.filter(m=>m.status==='AKTIF').forEach(m=>{
+      sel.innerHTML += `<option value="${m.nim}">${m.nama} (${m.nim})</option>`;
+      selLap.innerHTML += `<option value="${m.nim}">${m.nama} (${m.nim})</option>`;
+    });
+  });
+}
+function openAddMhs(){ document.getElementById('addMhsForm').classList.toggle('hidden'); }
+function submitAddMhs(){
+  const nim = document.getElementById('newNim').value.trim();
+  const nama = document.getElementById('newNama').value.trim();
+  if(!nim||!nama) return alert('Isi NIM dan Nama.');
+  callServer('addMahasiswa', [nim, nama], function(){
+    document.getElementById('newNim').value='';
+    document.getElementById('newNama').value='';
+    document.getElementById('addMhsForm').classList.add('hidden');
+    renderMahasiswaTable();
+  });
+}
+function hapusMhs(nim){
+  if(!confirm('Nonaktifkan mahasiswa ini?')) return;
+  callServer('deleteMahasiswa', [nim], function(){ renderMahasiswaTable(); });
+}
+
+/* ---------- Absen Manual ---------- */
+document.getElementById('manualTanggal') && (document.getElementById('manualTanggal').valueAsDate = new Date());
+function submitManual(){
+  const nim = document.getElementById('manualNim').value;
+  const tgl = document.getElementById('manualTanggal').value;
+  const status = document.getElementById('manualStatus').value;
+  if(!nim||!tgl) return alert('Lengkapi form.');
+  callServer('manualAbsen', [nim, tgl, status], function(res){
+    alert(res.message);
+  });
+}
+
+/* ---------- Kartu QR ---------- */
+function renderKartuQR(){
+  loadMahasiswa(function(list){
+    const grid = document.getElementById('qrGrid');
+    grid.innerHTML='';
+    list.filter(m=>m.status==='AKTIF').forEach(m=>{
+      const div = document.createElement('div');
+      div.className='qrcard';
+      div.innerHTML = `<div class="qrbox" id="qr-${m.nim}"></div><div class="nm">${m.nama}</div><div class="id">NIM: ${m.nim}</div>`;
+      grid.appendChild(div);
+      if(typeof QRCode !== 'undefined'){
+        new QRCode(document.getElementById('qr-'+m.nim), {text:m.payload, width:150, height:150});
+      }
+    });
+  });
+}
+
+/* ---------- Laporan ---------- */
+document.getElementById('lapTipe') && document.getElementById('lapTipe').addEventListener('change', function(){
+  document.getElementById('lapTanggalWrap').classList.toggle('hidden', this.value!=='harian');
+  document.getElementById('lapBulanWrap').classList.toggle('hidden', this.value!=='bulanan');
+});
+function cariLaporan(){
+  const tipe = document.getElementById('lapTipe').value;
+  const nim = document.getElementById('lapMhs').value;
+  let periode = null;
+  if(tipe==='harian') periode = document.getElementById('lapTanggal').value;
+  if(tipe==='bulanan') periode = document.getElementById('lapBulan').value;
+  callServer('getLaporan', [tipe, nim||null, periode], function(rows){
+    const tb = document.querySelector('#tblLaporan tbody');
+    tb.innerHTML='';
+    rows.forEach(r=>{
+      const cls = (r.status||'').toLowerCase();
+      tb.innerHTML += `<tr><td>${r.tanggal}</td><td>${r.nim}</td><td>${r.nama}</td><td>${r.masuk||'-'}</td><td>${r.pulang||'-'}</td><td><span class="badge ${cls}">${r.status}</span></td></tr>`;
+    });
+  });
+}
+
+/* ---------- Pengaturan ---------- */
+function loadSettingsUI(){
+  callServer('getSettings', [], function(s){
+    document.getElementById('setInstitusi').value = s['Nama Institusi']||'';
+    document.getElementById('setFakultas').value = s['Fakultas / Prodi']||'';
+    document.getElementById('setRuang').value = s['Ruang Kelas']||'';
+    document.getElementById('setAlamat').value = s['Alamat']||'';
+    document.getElementById('setLogo').value = s['Logo (URL)']||'';
+    document.getElementById('setPJ').value = s['Penanggung Jawab']||'';
+    document.getElementById('setNip').value = s['NIP/NIDN Penanggung Jawab']||'';
+    document.getElementById('setKota').value = s['Tempat/Kota TTD']||'';
+    document.getElementById('ruangLabel').textContent = s['Ruang Kelas']||'5.5';
+    if(s['Logo (URL)']) document.getElementById('logoImg').src = s['Logo (URL)'];
+  });
+}
+function saveSettingsUI(){
+  const obj = {
+    'Nama Institusi': document.getElementById('setInstitusi').value,
+    'Fakultas / Prodi': document.getElementById('setFakultas').value,
+    'Ruang Kelas': document.getElementById('setRuang').value,
+    'Alamat': document.getElementById('setAlamat').value,
+    'Logo (URL)': document.getElementById('setLogo').value,
+    'Penanggung Jawab': document.getElementById('setPJ').value,
+    'NIP/NIDN Penanggung Jawab': document.getElementById('setNip').value,
+    'Tempat/Kota TTD': document.getElementById('setKota').value
+  };
+  callServer('saveSettings', [obj], function(){
+    alert('Pengaturan tersimpan.');
+    loadSettingsUI();
+  });
+}
+
+/* ---------- Init ---------- */
+window.addEventListener('load', function(){
+  loadDashboard();
+  renderMahasiswaTable();
+  loadSettingsUI();
+});
+</script>
+</body>
+</html>
