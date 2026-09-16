@@ -250,15 +250,25 @@ document.querySelectorAll('.navbtn').forEach(btn=>{
 
 /* ---------- Helpers: call Apps Script (with local-preview fallback) ---------- */
 function callServer(fn, args, onSuccess, onFailure) {
-    // 1. GANTI teks di bawah ini dengan URL Web App yang sudah Anda salin dari Google Apps Script
-    const webAppUrl = "https://script.google.com/macros/s/AKfycbyFIwsxGsdXetlVFw2Qo8-ASCr5KgqCJ-NQ3a2-CKwZbycVbMCJSefxN1GUhJdVKDj2/exec"; 
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbyFIwsxGsdXetlVFw2Qo8-ASCr5KgqCJ-NQ3a2-CKWzbycVbMCJSefxN1GUhJdVKDj2/exec";
 
     fetch(webAppUrl, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ functionName: fn, arguments: args })
-})
-    .then(response => response.json())
+        method: "POST",
+        redirect: "follow",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify({
+            functionName: fn,
+            arguments: args
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("HTTP Error: " + response.status);
+        }
+        return response.json();
+    })
     .then(res => {
         if (res.status === "success") {
             if (onSuccess) onSuccess(res.data);
