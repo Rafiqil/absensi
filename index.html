@@ -250,29 +250,47 @@ document.querySelectorAll('.navbtn').forEach(btn=>{
 
 /* ---------- Helpers: call Apps Script (with local-preview fallback) ---------- */
 function callServer(fn, args, onSuccess, onFailure) {
+    // Google Apps Script Web App
     const webAppUrl = "https://script.google.com/macros/s/AKfycbzzpsxjuIwsvirHArr2czuJwewEdO2Y2Gdce9_w47KEki_MlmlwIdzU8Xa3eyu6AWlp/exec";
 
-    // JSONP dipakai agar GitHub Pages tidak terkena CORS saat
-    // membaca respons dari Google Apps Script.
-    const callbackName = "__absensi_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-    let script = document.createElement("script");
+    // JSONP digunakan agar GitHub Pages dapat berkomunikasi
+    // dengan Google Apps Script tanpa masalah CORS.
+    const callbackName =
+        "__absensi_cb_" +
+        Date.now() +
+        "_" +
+        Math.floor(Math.random() * 100000);
+
+    const script = document.createElement("script");
+    let finished = false;
+
+    function cleanup() {
+        if (finished) return;
+        finished = true;
+        try {
+            delete window[callbackName];
+        } catch (e) {}
+        if (script.parentNode) {
+            script.parentNode.removeChild(script);
+        }
+    }
 
     window[callbackName] = function(res) {
         try {
             if (res && res.status === "success") {
                 if (onSuccess) onSuccess(res.data);
             } else {
-                const message = res && res.message
-                    ? res.message
-                    : "Server mengembalikan error.";
+                const message =
+                    res && res.message
+                        ? res.message
+                        : "Server mengembalikan error.";
                 if (onFailure) onFailure(new Error(message));
             }
         } catch (err) {
             console.error("Error callServer:", err);
             if (onFailure) onFailure(err);
         } finally {
-            delete window[callbackName];
-            if (script.parentNode) script.parentNode.removeChild(script);
+            cleanup();
         }
     };
 
@@ -285,16 +303,17 @@ function callServer(fn, args, onSuccess, onFailure) {
     script.src = webAppUrl + "?" + params.toString();
 
     script.onerror = function() {
-        delete window[callbackName];
-        if (script.parentNode) script.parentNode.removeChild(script);
-
-        const err = new Error("Gagal terhubung ke Google Apps Script.");
+        const err = new Error(
+            "Gagal terhubung ke Google Apps Script. Periksa URL Web App dan deployment."
+        );
         console.error("Error callServer:", err);
+        cleanup();
         if (onFailure) onFailure(err);
     };
 
     document.head.appendChild(script);
 }
+
 
 let MHS_CACHE = [];
 
