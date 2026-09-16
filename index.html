@@ -252,36 +252,49 @@ document.querySelectorAll('.navbtn').forEach(btn=>{
 function callServer(fn, args, onSuccess, onFailure) {
     const webAppUrl = "https://script.google.com/macros/s/AKfycbyFIwsxGsdXetlVFw2Qo8-ASCr5KgqCJ-NQ3a2-CKWzbycVbMCJSefxN1GUhJdVKDj2/exec";
 
-    fetch(webAppUrl, {
-        method: "POST",
-        redirect: "follow",
-        headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify({
-            functionName: fn,
-            arguments: args
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("HTTP Error: " + response.status);
+    // JSONP dipakai agar GitHub Pages tidak terkena CORS saat
+    // membaca respons dari Google Apps Script.
+    const callbackName = "__absensi_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+    let script = document.createElement("script");
+
+    window[callbackName] = function(res) {
+        try {
+            if (res && res.status === "success") {
+                if (onSuccess) onSuccess(res.data);
+            } else {
+                const message = res && res.message
+                    ? res.message
+                    : "Server mengembalikan error.";
+                if (onFailure) onFailure(new Error(message));
+            }
+        } catch (err) {
+            console.error("Error callServer:", err);
+            if (onFailure) onFailure(err);
+        } finally {
+            delete window[callbackName];
+            if (script.parentNode) script.parentNode.removeChild(script);
         }
-        return response.json();
-    })
-    .then(res => {
-        if (res.status === "success") {
-            if (onSuccess) onSuccess(res.data);
-        } else {
-            if (onFailure) onFailure(res.message);
-        }
-    })
-    .catch(err => {
+    };
+
+    const params = new URLSearchParams();
+    params.set("api", "1");
+    params.set("functionName", fn);
+    params.set("arguments", JSON.stringify(args || []));
+    params.set("callback", callbackName);
+
+    script.src = webAppUrl + "?" + params.toString();
+
+    script.onerror = function() {
+        delete window[callbackName];
+        if (script.parentNode) script.parentNode.removeChild(script);
+
+        const err = new Error("Gagal terhubung ke Google Apps Script.");
         console.error("Error callServer:", err);
         if (onFailure) onFailure(err);
-    });
-}
+    };
 
+    document.head.appendChild(script);
+}
 
 let MHS_CACHE = [];
 
